@@ -52,6 +52,9 @@ HTMLWidgets.widget({
 
     // set this up even if zoom = F
     var zoom = d3.zoom();
+    
+    // data for shiny
+    var dataForShiny = [];
 
     // create d3 force layout
     force
@@ -159,7 +162,7 @@ HTMLWidgets.widget({
             .extent([[0, 0], [width, height]])
             .on("brush", function() {
                 var extent = d3.event.selection;
-                var dataForShiny = [];
+                dataForShiny = [];
                 node.style("fill", function(d) {
                     var evaluation = extent[0][0] <= d.x && d.x < extent[1][0]
                         && extent[0][1] <= d.y && d.y < extent[1][1];
@@ -171,8 +174,9 @@ HTMLWidgets.widget({
                     }
 
                 });
-                console.log(dataForShiny);
-                Shiny.onInputChange("mydata", dataForShiny);
+            }).on("end", function(){ 
+              console.log(dataForShiny);
+              Shiny.onInputChange("mydata", dataForShiny);
             })
     );
 
