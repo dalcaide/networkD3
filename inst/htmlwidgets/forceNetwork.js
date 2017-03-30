@@ -155,30 +155,31 @@ HTMLWidgets.widget({
       .style("opacity", options.opacityNoHover)
       .style("pointer-events", "none");
       
-    var brush = svg.append("g")
-        //.datum(function() { return {selected: false, previouslySelected: false}; })
-        .attr("class", "brush")
-        .call(d3.brush()
-            .extent([[0, 0], [width, height]])
-            .on("brush", function() {
-                var extent = d3.event.selection;
-                dataForShiny = [];
-                node.style("fill", function(d) {
-                    var evaluation = extent[0][0] <= d.x && d.x < extent[1][0]
-                        && extent[0][1] <= d.y && d.y < extent[1][1];
-                    if (evaluation == true) {
-                        dataForShiny.push(d.name)
-                        return "red"
-                    } else {
-                        return d3.select(this).attr("fill-copied");
-                    }
-
-                });
-            }).on("end", function(){ 
-              console.log(dataForShiny);
-              Shiny.onInputChange("mydata", dataForShiny);
-            })
-    );
+    if (options.brushing) { // <-- enable brushing interaction
+      var brush = svg.append("g")
+          .attr("class", "brush")
+          .call(d3.brush()
+              .extent([[0, 0], [width, height]])
+              .on("brush", function() {
+                  var extent = d3.event.selection;
+                  dataForShiny = [];
+                  node.style("fill", function(d) {
+                      var evaluation = extent[0][0] <= d.x && d.x < extent[1][0]
+                          && extent[0][1] <= d.y && d.y < extent[1][1];
+                      if (evaluation == true) {
+                          dataForShiny.push(d.name)
+                          return "red"
+                      } else {
+                          return d3.select(this).attr("fill-copied");
+                      }
+  
+                  });
+              }).on("end", function(){ 
+                console.log(dataForShiny);
+                Shiny.onInputChange("mydata", dataForShiny);
+              })
+      );
+    }
 
     function tick() {
       node.attr("transform", function(d) {
