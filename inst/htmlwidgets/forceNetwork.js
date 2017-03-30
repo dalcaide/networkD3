@@ -5,7 +5,7 @@ HTMLWidgets.widget({
   type: "output",
 
   initialize: function(el, width, height) {
-
+    console.log("initialize");
     d3.select(el).append("svg")
         .attr("width", width)
         .attr("height", height);
@@ -14,7 +14,7 @@ HTMLWidgets.widget({
   },
 
   resize: function(el, width, height, force) {
-
+    console.log("resize");
     d3.select(el).select("svg")
         .attr("width", width)
         .attr("height", height);
@@ -25,7 +25,8 @@ HTMLWidgets.widget({
   },
 
   renderValue: function(el, x, force) {
-
+  console.log("renderValue");
+  console.log(d3.select(el).select("svg").attr("height"));
   // Compute the node radius  using the javascript math expression specified
     function nodeSize(d) {
             if(options.nodesize){
@@ -47,7 +48,8 @@ HTMLWidgets.widget({
     // get the width and height
     var width = el.offsetWidth;
     var height = el.offsetHeight;
-
+    console.log("el");
+    console.log(width + " " + height);
     var color = eval(options.colourScale);
 
     // set this up even if zoom = F
@@ -139,6 +141,10 @@ HTMLWidgets.widget({
       .on("mouseout", mouseout)
       .on("click", click)
       .call(drag);
+      
+      // --- Restart the force simulation ---
+      // It avoids a bug when we interact with Shiny
+      force.alphaTarget(0.3).restart();
 
     node.append("circle")
       .attr("r", function(d){return nodeSize(d);})
