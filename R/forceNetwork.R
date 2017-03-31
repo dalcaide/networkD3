@@ -141,6 +141,7 @@
 #' @export
 forceNetwork <- function(Links,
                          Nodes,
+                         Categories = NULL,
                          Source,
                          Target,
                          Value,
@@ -171,6 +172,7 @@ forceNetwork <- function(Links,
     # If tbl_df convert to plain data.frame
     Links <- tbl_df_strip(Links)
     Nodes <- tbl_df_strip(Nodes)
+    Categories <- tbl_df_strip(Categories)
 
     # Hack for UI consistency. Think of improving.
     colourScale <- as.character(colourScale)
@@ -231,7 +233,7 @@ forceNetwork <- function(Links,
     # create widget
     htmlwidgets::createWidget(
             name = "forceNetwork",
-            x = list(links = LinksDF, nodes = NodesDF, options = options),
+            x = list(links = LinksDF, nodes = NodesDF, categories  = Categories, options = options),
             width = width,
             height = height,
             htmlwidgets::sizingPolicy(padding = 10, browser.fill = TRUE),

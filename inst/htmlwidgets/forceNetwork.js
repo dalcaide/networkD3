@@ -5,7 +5,7 @@ HTMLWidgets.widget({
   type: "output",
 
   initialize: function(el, width, height) {
-    console.log("initialize");
+    
     d3.select(el).append("svg")
         .attr("width", width)
         .attr("height", height);
@@ -14,7 +14,7 @@ HTMLWidgets.widget({
   },
 
   resize: function(el, width, height, force) {
-    console.log("resize");
+    
     d3.select(el).select("svg")
         .attr("width", width)
         .attr("height", height);
@@ -25,8 +25,7 @@ HTMLWidgets.widget({
   },
 
   renderValue: function(el, x, force) {
-  console.log("renderValue");
-  console.log(d3.select(el).select("svg").attr("height"));
+    
   // Compute the node radius  using the javascript math expression specified
     function nodeSize(d) {
             if(options.nodesize){
@@ -40,7 +39,7 @@ HTMLWidgets.widget({
 
     // alias options
     var options = x.options;
-
+    console.log(x.categories);
     // convert links and nodes data frames to d3 friendly format
     var links = HTMLWidgets.dataframeToD3(x.links);
     var nodes = HTMLWidgets.dataframeToD3(x.nodes);
@@ -48,8 +47,7 @@ HTMLWidgets.widget({
     // get the width and height
     var width = el.offsetWidth;
     var height = el.offsetHeight;
-    console.log("el");
-    console.log(width + " " + height);
+    
     var color = eval(options.colourScale);
 
     // set this up even if zoom = F
@@ -134,9 +132,7 @@ HTMLWidgets.widget({
       .data(force.nodes())
       .enter().append("g")
       .attr("class", "node")
-      .attr("fill", function(d) { return color(d.group); })
-      .attr("fill-copied", function(d) { return color(d.group); })
-      .style("opacity", options.opacity)
+      .attr("size-pie", function(d){return nodeSize(d);})
       .on("mouseover", mouseover)
       .on("mouseout", mouseout)
       .on("click", click)
@@ -144,14 +140,41 @@ HTMLWidgets.widget({
       
       // --- Restart the force simulation ---
       // It avoids a bug when we interact with Shiny
-      force.alphaTarget(0.3).restart();
-
-    node.append("circle")
+      force.alphaTarget(0).restart();
+    
+    // ---- Adding the pie chart if categories is available ----
+    if (x.categories === null) {
+      
+      node.append("circle")
       .attr("r", function(d){return nodeSize(d);})
+      .attr("fill", function(d) { return color(d.group); })
+      .attr("fill-copied", function(d) { return color(d.group); })
+      .attr("class", "node-element")
       .style("stroke", "#fff")
       .style("opacity", options.opacity)
       .style("stroke-width", "1.5px");
-
+      
+    } else {
+      
+      var pie = d3.pie()
+      .sort(null)
+      .value(function(d) { return d; });
+      
+      node.selectAll(".arc")
+      .data(function(d,i){ return pie(x.categories[i]) }).enter()
+      .append("path")
+      .attr("d", d3.arc()
+        .outerRadius(function(d,i){ 
+          nodesize = d3.select(this.parentNode).attr("size-pie"); 
+          return nodesize;
+        }).innerRadius(0)
+      ).attr("fill", function(d) { return color(d.index); })
+      .attr("fill-copied", function(d) { return color(d.index); })
+      .attr("class", "node-element")
+      .style("opacity", options.opacity);
+      
+    }
+      
     node.append("svg:text")
       .attr("class", "nodetext")
       .attr("dx", 12)
@@ -169,14 +192,16 @@ HTMLWidgets.widget({
               .on("brush", function() {
                   var extent = d3.event.selection;
                   dataForShiny = [];
-                  node.style("fill", function(d) {
+                  node.each(function(d) {
                       var evaluation = extent[0][0] <= d.x && d.x < extent[1][0]
                           && extent[0][1] <= d.y && d.y < extent[1][1];
                       if (evaluation == true) {
                           dataForShiny.push(d.name)
-                          return "red"
+                          d3.select(this).selectAll(".node-element").attr("fill","red")
                       } else {
-                          return d3.select(this).attr("fill-copied");
+                          d3.select(this).selectAll(".node-element").each(function(){
+                            d3.select(this).attr("fill", d3.select(this).attr("fill-copied") ); 
+                          });
                       }
   
                   });
