@@ -39,7 +39,7 @@ HTMLWidgets.widget({
 
     // alias options
     var options = x.options;
-    console.log(x.categories);
+    // console.log(x.categories);
     // convert links and nodes data frames to d3 friendly format
     var links = HTMLWidgets.dataframeToD3(x.links);
     var nodes = HTMLWidgets.dataframeToD3(x.nodes);
@@ -146,11 +146,12 @@ HTMLWidgets.widget({
     if (x.categories === null) {
       
       node.append("circle")
-      .attr("r", function(d){return nodeSize(d);})
+      .attr("r", function(d){ return nodeSize(d);})
       .attr("fill", function(d) { return color(d.group); })
       .attr("fill-copied", function(d) { return color(d.group); })
       .attr("class", "node-element")
-      .style("stroke", "#fff")
+      .attr("id", function(d) { return "node-" + d.name; })
+      .style("stroke", "#000") //Dani: old #fff
       .style("opacity", options.opacity)
       .style("stroke-width", "1.5px");
       
@@ -160,7 +161,9 @@ HTMLWidgets.widget({
       .sort(null)
       .value(function(d) { return d; });
       
-      node.selectAll(".arc")
+      node
+      .attr("id", function(d) {return "node-" + d.name})
+      .selectAll(".arc")
       .data(function(d,i){ return pie(x.categories[i]) }).enter()
       .append("path")
       .attr("d", d3.arc()
@@ -179,10 +182,27 @@ HTMLWidgets.widget({
       .attr("class", "nodetext")
       .attr("dx", 12)
       .attr("dy", ".35em")
-      .text(function(d) { return d.name })
+      .text(function(d) { return d.name; })
       .style("font", options.fontSize + "px " + options.fontFamily)
       .style("opacity", options.opacityNoHover)
       .style("pointer-events", "none");
+      /*
+      Shiny.addCustomMessageHandler("myCallbackHandler",
+        function (dataReceived) {
+          console.log(dataReceived);
+          var dataSelected = [].concat(dataReceived); // <-- Avoid problems when there is only one node
+          // Restore previous color
+          d3.selectAll(".node-element").attr("fill",function(d){ return d3.select(this).attr("fill-copied") });
+          // Select new data
+          dataSelected.forEach(function(d){
+            if (x.categories === null) {
+              d3.select("#node-"+ d).attr("fill","yellow");
+            } else {
+              d3.select("#node-"+ d).selectAll("path").attr("fill","yellow");
+            }
+          });
+        }
+      );*/
       
     if (options.brushing) { // <-- enable brushing interaction
       var brush = svg.append("g")
@@ -197,7 +217,7 @@ HTMLWidgets.widget({
                           && extent[0][1] <= d.y && d.y < extent[1][1];
                       if (evaluation == true) {
                           dataForShiny.push(d.name)
-                          d3.select(this).selectAll(".node-element").attr("fill","red")
+                          d3.select(this).selectAll(".node-element").attr("fill","yellow")
                       } else {
                           d3.select(this).selectAll(".node-element").each(function(){
                             d3.select(this).attr("fill", d3.select(this).attr("fill-copied") ); 
@@ -211,6 +231,56 @@ HTMLWidgets.widget({
               })
       );
     }
+    
+    // Lasso interaction //
+
+// Lasso functions
+    var lasso_start = function() {
+        lasso.items()
+            .classed("not_possible",true)
+            .classed("selected",false);
+    };
+
+    var lasso_draw = function() {
+
+        // Style the possible dots
+        lasso.possibleItems()
+            .classed("not_possible",false)
+            .classed("possible",true);
+
+        // Style the not possible dot
+        lasso.notPossibleItems()
+            .classed("not_possible",true)
+            .classed("possible",false);
+    };
+
+    var lasso_end = function() {
+        // Reset the color of all dots
+        lasso.items()
+            .classed("not_possible",false)
+            .classed("possible",false);
+
+        // Style the selected dots
+        lasso.selectedItems()
+            .classed("selected",true);
+
+    };
+
+    var lasso = d3.lasso()
+        .closePathSelect(true)
+        .closePathDistance(100)
+        .items(node.selectAll('circle')) //TODO: Avoid problems with other circles
+        .targetArea(d3.select('svg'))    //TODO: Avoid problems with other svgs
+        .on("start",lasso_start)
+        .on("draw",lasso_draw)
+        .on("end",lasso_end);
+
+    d3.select('svg').call(lasso);
+    
+    //console.log(d3.lasso());
+
+    
+    // ----------------- //
 
     function tick() {
       node.attr("transform", function(d) {
