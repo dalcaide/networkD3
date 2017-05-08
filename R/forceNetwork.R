@@ -161,7 +161,7 @@ forceNetwork <- function(Links,
                          opacity = 0.6,
                          zoom = FALSE,
                          legend = FALSE,
-                         brushing = FALSE,
+                         interaction = "brushing",
                          bounded = FALSE,
                          opacityNoHover = 0,
                          clickAction = NULL)
@@ -169,6 +169,14 @@ forceNetwork <- function(Links,
     # Check if data is zero indexed
     check_zero(Links[, Source], Links[, Target])
 
+    # Check if LASSO interaction and ZOOM
+    if (interaction == "lasso" && zoom == TRUE) {
+      zoom = FALSE
+      warning("Lasso interaction is active. 
+              Zoom option is not compatible with lasso at the same time. 
+              Zoom won't be used")
+    }
+  
     # If tbl_df convert to plain data.frame
     Links <- tbl_df_strip(Links)
     Nodes <- tbl_df_strip(Nodes)
@@ -222,7 +230,7 @@ forceNetwork <- function(Links,
             opacity = opacity,
             zoom = zoom,
             legend = legend,
-            brushing = brushing,
+            interaction = interaction,
             nodesize = nodesize,
             radiusCalculation = radiusCalculation,
             bounded = bounded,
