@@ -150,7 +150,7 @@ HTMLWidgets.widget({
       .attr("fill-copied", function(d) { return color(d.group); })
       .attr("class", "node-element")
       .attr("id", function(d) { return "node-" + d.name; })
-      .style("stroke", "#000") //Dani: old #fff
+      .style("stroke", "#000") // Change made: #fff
       .style("opacity", options.opacity)
       .style("stroke-width", "1.5px");
       
@@ -267,7 +267,7 @@ HTMLWidgets.widget({
           .closePathSelect(true)
           .closePathDistance(100)
           .items(node.selectAll(".node-element"))
-          .targetArea(svg.select(this.parentNode))
+          .targetArea(d3.select(el).select("svg"))
           .on("start",lasso_start)
           .on("draw",lasso_draw)
           .on("end",lasso_end);
