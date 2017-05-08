@@ -162,6 +162,7 @@ forceNetwork <- function(Links,
                          zoom = FALSE,
                          legend = FALSE,
                          interaction = "brushing",
+                         shiny = FALSE,
                          bounded = FALSE,
                          opacityNoHover = 0,
                          clickAction = NULL)
@@ -172,9 +173,9 @@ forceNetwork <- function(Links,
     # Check if LASSO interaction and ZOOM
     if (interaction == "lasso" && zoom == TRUE) {
       zoom = FALSE
-      warning("Lasso interaction is active. 
-              Zoom option is not compatible with lasso at the same time. 
-              Zoom won't be used")
+      warning(paste("Lasso interaction is active.", 
+              "Zoom option is not compatible with lasso at the same time.",
+              "Zoom won't be used", sep=" "))
     }
   
     # If tbl_df convert to plain data.frame
@@ -231,6 +232,7 @@ forceNetwork <- function(Links,
             zoom = zoom,
             legend = legend,
             interaction = interaction,
+            shiny = shiny,
             nodesize = nodesize,
             radiusCalculation = radiusCalculation,
             bounded = bounded,

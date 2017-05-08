@@ -186,24 +186,25 @@ HTMLWidgets.widget({
       .style("opacity", options.opacityNoHover)
       .style("pointer-events", "none");
       
-      /*
-      Shiny.addCustomMessageHandler("myCallbackHandler",
-        function (dataReceived) {
-          console.log(dataReceived);
-          var dataSelected = [].concat(dataReceived); // <-- Avoid problems when there is only one node
-          // Restore previous color
-          d3.selectAll(".node-element").attr("fill",function(d){ return d3.select(this).attr("fill-copied") });
-          // Select new data
-          dataSelected.forEach(function(d){
-            if (x.categories === null) {
-              d3.select("#node-"+ d).attr("fill","yellow");
-            } else {
-              d3.select("#node-"+ d).selectAll("path").attr("fill","yellow");
-            }
-          });
-        }
-      );*/
-      
+      if (options.shiny) {
+          Shiny.addCustomMessageHandler("myCallbackHandler",
+          function (dataReceived) {
+            console.log(dataReceived);
+            var dataSelected = [].concat(dataReceived); // <-- Avoid problems when there is only one node
+            // Restore previous color
+            d3.selectAll(".node-element").attr("fill",function(d){ return d3.select(this).attr("fill-copied") });
+            // Select new data
+            dataSelected.forEach(function(d){
+              if (x.categories === null) {
+                d3.select("#node-"+ d).attr("fill","yellow");
+              } else {
+                d3.select("#node-"+ d).selectAll("path").attr("fill","yellow");
+              }
+            });
+          }
+        );
+      }
+
     if (options.interaction == "brushing") { // <-- enable brushing interaction
       var brush = svg.append("g")
           .attr("class", "brush")
@@ -226,7 +227,6 @@ HTMLWidgets.widget({
   
                   });
               }).on("end", function(){ 
-                console.log(dataForShiny);
                 Shiny.onInputChange("mydata", dataForShiny);
               })
       );
@@ -255,13 +255,19 @@ HTMLWidgets.widget({
           // Style the selected dots
           lasso.selectedItems()
               .classed("selected",true);
+          // Data for Shiny
+          dataForShiny = [];    
+          lasso.selectedItems().each(function(d){
+            dataForShiny.push(d.name)
+          });
+          Shiny.onInputChange("mydata", dataForShiny);
       };
       // Lasso function
       var lasso = d3.lasso()
           .closePathSelect(true)
           .closePathDistance(100)
-          .items(node.selectAll('circle')) //TODO: Avoid problems with other circles
-          .targetArea(d3.select('svg'))    //TODO: Avoid problems with other svgs
+          .items(node.selectAll(".node-element"))
+          .targetArea(svg.select(this.parentNode))
           .on("start",lasso_start)
           .on("draw",lasso_draw)
           .on("end",lasso_end);

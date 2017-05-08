@@ -18,11 +18,11 @@
 }
 
 .not_possible {
-    fill: rgb(200, 11, 21);
+    fill-opacity: 0.7
 }
 
 .possible {
-    fill: #3dec21;
+    fill: #ffcc00
 }
 
 .selected {
