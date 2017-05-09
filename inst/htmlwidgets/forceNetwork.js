@@ -139,7 +139,7 @@ HTMLWidgets.widget({
       
       // --- Restart the force simulation ---
       // It avoids a bug when we interact with Shiny
-      force.alphaTarget(0).restart();
+      force.alphaTarget(0.025).restart();
     
     // ---- Adding the pie chart if categories is available ----
     if (x.categories === null) {
@@ -187,23 +187,32 @@ HTMLWidgets.widget({
       .style("pointer-events", "none");
       
       if (options.shiny) {
-          Shiny.addCustomMessageHandler("myCallbackHandler",
-          function (dataReceived) {
-            console.log(dataReceived);
-            var dataSelected = [].concat(dataReceived); // <-- Avoid problems when there is only one node
-            // Restore previous color
-            d3.selectAll(".node-element").attr("fill",function(d){ return d3.select(this).attr("fill-copied") });
-            // Select new data
-            dataSelected.forEach(function(d){
-              if (x.categories === null) {
-                d3.select("#node-"+ d).attr("fill","yellow");
-              } else {
-                d3.select("#node-"+ d).selectAll("path").attr("fill","yellow");
-              }
-            });
+      // Add id name to svg
+      d3.select(el).select("svg").attr("id", options.id);
+      console.log(options.id);
+      // <-- NOTE: Adding the id is a way to identify the source of this data in shiny
+
+      function receiveDataFromShiny (dataReceived) {
+        var idName = d3.select(el).select("svg").attr("id"); 
+        console.log(idName);
+        var dataSelected = [].concat(dataReceived[idName]); 
+        // <-- Avoid problems when there is only one node
+        // Restore previous color
+        d3.selectAll(".node-element").attr("fill",function(d){ 
+          return d3.select(this).attr("fill-copied") 
+        });
+        // Select new data
+        dataSelected.forEach(function(d){
+          if (x.categories === null) {
+            d3.select("#node-"+ d).attr("fill","yellow");
+          } else {
+            d3.select("#node-"+ d).selectAll("path").attr("fill","yellow");
           }
-        );
+        });
       }
+      
+       Shiny.addCustomMessageHandler("myCallbackHandler", receiveDataFromShiny);
+    }
 
     if (options.interaction == "brushing") { // <-- enable brushing interaction
       var brush = svg.append("g")
@@ -265,7 +274,7 @@ HTMLWidgets.widget({
       // Lasso function
       var lasso = d3.lasso()
           .closePathSelect(true)
-          .closePathDistance(100)
+          .closePathDistance(150)
           .items(node.selectAll(".node-element"))
           .targetArea(d3.select(el).select("svg"))
           .on("start",lasso_start)

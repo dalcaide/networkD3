@@ -163,6 +163,7 @@ forceNetwork <- function(Links,
                          legend = FALSE,
                          interaction = "brushing",
                          shiny = FALSE,
+                         id = "default",
                          bounded = FALSE,
                          opacityNoHover = 0,
                          clickAction = NULL)
@@ -233,6 +234,7 @@ forceNetwork <- function(Links,
             legend = legend,
             interaction = interaction,
             shiny = shiny,
+            id = id,
             nodesize = nodesize,
             radiusCalculation = radiusCalculation,
             bounded = bounded,
@@ -253,7 +255,7 @@ forceNetwork <- function(Links,
 
 #' @rdname networkD3-shiny
 #' @export
-forceNetworkOutput <- function(outputId, width = "100%", height = "500px") {
+forceNetworkOutput <- function(outputId, width = "100%", height = "960px") {
         shinyWidgetOutput(outputId, "forceNetwork", width, height,
                           package = "networkD3")
 }
