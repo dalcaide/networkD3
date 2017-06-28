@@ -1,62 +1,36 @@
 HTMLWidgets.widget({
 
-  name: "forceNetwork",
-
+  name: "compareNetwork",
+  
   type: "output",
 
-  initialize: function(el, width, height) {
+  renderValue: function(el, x) {
+   
+   // Global variables
+    var dataForShiny = [],
+        options = x.options,
+        color = eval(options.colourScale),
+        zoom = d3.zoom();
     
-    d3.select(el).append("svg")
-        .attr("width", width)
-        .attr("height", height);
-
-    return d3.forceSimulation();
-  },
-
-  resize: function(el, width, height, force) {
+   // Remove previous elements per iteration
+   d3.select(el).selectAll("svg").remove();
+   
+   // Get the width and height
+   var width = el.offsetWidth   / x.inputs.length,
+       height = el.offsetHeight / x.inputs.length;
     
-    d3.select(el).select("svg")
-        .attr("width", width)
-        .attr("height", height);
+   for (var value in x.inputs ) {
+    fnet (el, x.inputs[value]);
+   }
 
-    force.force("xAxis", d3.forceX(width / 2))
-        .force("yAxis", d3.forceY(height / 2))
-        .restart();
-  },
+    function fnet (el, data) {
+     
+    // Convert links and nodes data frames to d3 friendly format
+    var links = HTMLWidgets.dataframeToD3(data.links),
+        nodes = HTMLWidgets.dataframeToD3(data.nodes);
 
-  renderValue: function(el, x, force) {
-    
-  // Compute the node radius  using the javascript math expression specified
-    function nodeSize(d) {
-            if(options.nodesize){
-                    return eval(options.radiusCalculation);
-
-            }else{
-                    return 6}
-
-    }
-
-
-    // alias options
-    var options = x.options;
-    // convert links and nodes data frames to d3 friendly format
-    var links = HTMLWidgets.dataframeToD3(x.links);
-    var nodes = HTMLWidgets.dataframeToD3(x.nodes);
-
-    // get the width and height
-    var width = el.offsetWidth;
-    var height = el.offsetHeight;
-    
-    var color = eval(options.colourScale);
-
-    // set this up even if zoom = F
-    var zoom = d3.zoom();
-    
-    // data for shiny
-    var dataForShiny = [];
-
-    // create d3 force layout
-    force
+    // Create d3 force layout
+    var force = d3.forceSimulation()
       .nodes(d3.values(nodes))
       .force("link", d3.forceLink(links).distance(options.linkDistance))
       .force("xAxis", d3.forceX(width / 2))
@@ -68,31 +42,22 @@ HTMLWidgets.widget({
         .on("start", dragstart)
         .on("drag", dragged)
         .on("end", dragended)
-      function dragstart(d) {
-        if (!d3.event.active) force.alphaTarget(0.3).restart();
-        d.fx = d.x;
-        d.fy = d.y;
-      }
-      function dragged(d) {
-        d.fx = d3.event.x;
-        d.fy = d3.event.y;
-      }
-      function dragended(d) {
-        if (!d3.event.active) force.alphaTarget(0);
-        d.fx = null;
-        d.fy = null;
-      }
+        
+    // Create SVG element
+    var svg = d3.select(el)
+      .append("svg")
+      .attr("width", width)
+      .attr("height", height)
+      .attr("id", "thres" + data.threshold);
 
-    // select the svg element and remove existing children
-    var svg = d3.select(el).select("svg");
-    svg.selectAll("*").remove();
-    // add two g layers; the first will be zoom target if zoom = T
-    //  fine to have two g layers even if zoom = F
+    // Add two g layers; the first will be zoom target if zoom = T
+    // Fine to have two g layers even if zoom = F
     svg = svg
-        .append("g").attr("class","zoom-layer")
         .append("g")
-
-    // add zooming if requested
+        .attr("class","zoom-layer")
+        .append("g")
+        
+    // Add zooming if requested
     if (options.zoom) {
       function redraw() {
         d3.select(el).select(".zoom-layer")
@@ -113,7 +78,7 @@ HTMLWidgets.widget({
       .data(links)
       .enter().append("line")
       .attr("class", "link")
-      .style("stroke", function(d) { return d.colour ; })
+      .style("stroke", function(d) { return "black"/*d.colour*/ ; })
       //.style("stroke", options.linkColour)
       .style("opacity", options.opacity)
       .style("stroke-width", eval("(" + options.linkWidth + ")"))
@@ -141,6 +106,10 @@ HTMLWidgets.widget({
       // It avoids a bug when we interact with Shiny
       force.alphaTarget(0.025).restart();
     
+     
+     console.log(links, nodes);
+     
+     
     // ---- Adding the pie chart if categories is available ----
     if (x.categories === null) {
       
@@ -163,7 +132,7 @@ HTMLWidgets.widget({
       node
       .attr("id", function(d) {return "node-" + d.name})
       .selectAll(".arc")
-      .data(function(d,i){ return pie(x.categories[i]) }).enter()
+      .data(function(d,i){ return pie(data.categories[i]) }).enter()
       .append("path")
       .attr("d", d3.arc()
         .outerRadius(function(d,i){ 
@@ -202,7 +171,7 @@ HTMLWidgets.widget({
           });
           // Select new data
           dataSelected.forEach(function(d){
-            if (x.categories === null) {
+            if (data.categories === null) {
               d3.select("#" + key).select("#node-"+ d).attr("fill","yellow");
             } else {
               d3.select("#" + key).select("#node-"+ d).selectAll("path").attr("fill","yellow");
@@ -217,7 +186,7 @@ HTMLWidgets.widget({
     function sendDataToShiny (dataForShiny){ 
       var idName = d3.select(el).select("svg").attr("id");
       var dani = {"id":idName, "data": dataForShiny};
-      console.log(dani);
+      //console.log(dani);
       return dani;
     }
 
@@ -289,8 +258,8 @@ HTMLWidgets.widget({
   
       d3.select(el).select('svg').call(lasso);
     }
-
-    function tick() {
+     
+     function tick() {
       node.attr("transform", function(d) {
         if(options.bounded){ // adds bounding box
             d.x = Math.max(nodeSize(d), Math.min(width - nodeSize(d), d.x));
@@ -305,7 +274,7 @@ HTMLWidgets.widget({
         .attr("x2", function(d) { return d.target.x; })
         .attr("y2", function(d) { return d.target.y; });
     }
-
+    
     function mouseover() {
       d3.select(this).select("circle").transition()
         .duration(750)
@@ -361,8 +330,34 @@ HTMLWidgets.widget({
           .attr('y', legendRectSize - legendSpacing)
           .text(function(d) { return d; });
     }
-
-    // make font-family consistent across all elements
-    d3.select(el).selectAll('text').style('font-family', options.fontFamily);
-  },
+     
+   }
+   
+      // **** NodeSize: Compute the node radius ****
+   function nodeSize(d) {
+     if ( options.nodesize ) {
+       return eval(options.radiusCalculation);
+     } else {
+       return 10
+     }
+   }
+   // *******************************
+   //  **** Drag functions ****
+   function dragstart(d) {
+      if (!d3.event.active) force.alphaTarget(0.3).restart();
+      d.fx = d.x;
+      d.fy = d.y;
+    }
+    function dragged(d) {
+      d.fx = d3.event.x;
+      d.fy = d3.event.y;
+    }
+    function dragended(d) {
+      if (!d3.event.active) force.alphaTarget(0);
+      d.fx = null;
+      d.fy = null;
+    }
+    // *******************************
+   
+  }
 });
