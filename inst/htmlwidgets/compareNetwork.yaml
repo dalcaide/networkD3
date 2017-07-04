@@ -7,6 +7,10 @@ dependencies:
     version: 1.0
     src: "htmlwidgets/lib"
     script: d3-lasso.min.js
+  - name: comNetStyle
+    version: 1.0
+    src: "htmlwidgets/style"
+    stylesheet: comNet.css
   - name: comNet
     version: 1.0
     src: "htmlwidgets/lib"

@@ -3,10 +3,11 @@
 comNet = function (el, x) {
 
     // Global variables
-    this.dataForShiny = [];
     this.options = x.options;
     this.color = eval(x.options.colourScale);
     this.zoom = d3.zoom();
+    this.dataIdSelected = [];
+
 
     // Remove previous elements per iteration
     d3.select(el).selectAll("svg").remove();
@@ -21,30 +22,88 @@ comNet = function (el, x) {
 comNet.prototype.drawNetworks = function () {
 
     var me = this;
+
+    me.createPanel();
+
     for (var value in me.x.inputs ) {
         me.createNetwork (me.el, me.x.inputs[value] );
     }
 
 };
 
+comNet.prototype.createPanel = function () {
+
+    var me = this;
+
+    d3.select("#controlPanel").remove();
+
+    d3.select(me.el)
+        .append("div")
+        .attr("id", "controlPanel")
+        .append("button")
+        .attr("type", "button")
+        .text("Clustering")
+        .attr("id", "clustering")
+        .on("click", function() { me.clusteringButton() });
+};
+
+
+comNet.prototype.clusteringButton = function () {
+
+    var me = this;
+    var cArray = ["clustering1", "clustering2", "clustering3", "clustering4"],
+        cond = false,
+        cond_i = 0;
+
+    console.log("dani");
+    while (cond == false && cond_i < cArray.length) {
+
+        if (d3.selectAll("." + cArray[cond_i]).size() == 0 ) {
+            cond = true;
+        } else {
+            cond_i++;
+        }
+
+    }
+
+    console.log(cond_i, cArray[cond_i]);
+
+    d3.selectAll(".selected")
+        .classed("selected",false)
+        .classed("possible",false)
+        .classed(cArray[cond_i], true);
+
+};
+
 comNet.prototype.createNetwork = function (el, data) {
 
     var me = this;
+
     // Convert links and nodes data frames to d3 friendly format
     var links = HTMLWidgets.dataframeToD3(data.links),
         nodes = HTMLWidgets.dataframeToD3(data.nodes),
-        categories = data.categories;
+        idSvg = "t" + data.threshold.toString().replace('.','-');
+
+    var pie = d3.pie()
+        .sort(null)
+        .value(function(d) { return d; });
+
+    // Adding the id-element inside nodes Object
+    nodes.forEach(function(d){
+       d.nameList = data.nameList[d.name];
+       d.categories = pie(data.categories[d.name]);
+    });
 
     // Create SVG element
     var svg = d3.select(el)
         .append("svg")
         .attr("width", me.width)
         .attr("height", me.height)
-        .attr("id", "thres" + data.threshold);
+        .attr("id", idSvg);
 
     // Add two g layers; the first will be zoom target if zoom = T
     // Fine to have two g layers even if zoom = F
-    svg
+    svg = svg
         .append("g")
         .attr("class","zoom-layer")
         .append("g");
@@ -55,7 +114,7 @@ comNet.prototype.createNetwork = function (el, data) {
             d3.select(el).select(".zoom-layer")
                 .attr("transform", d3.event.transform);
         }
-        zoom.on("zoom", redraw);
+        me.zoom.on("zoom", redraw);
 
         d3.select(el).select("svg")
             .attr("pointer-events", "all")
@@ -64,16 +123,14 @@ comNet.prototype.createNetwork = function (el, data) {
     } else {
         me.zoom.on("zoom", null);
     }
-
-    me.drawNodes(svg, nodes, links, categories);
+    me.drawNodes(idSvg, svg, nodes, links);
 
 };
 
 
-comNet.prototype.drawNodes = function (svg,
+comNet.prototype.drawNodes = function (idSvg, svg,
                                        nodes,
-                                       links,
-                                       categories) {
+                                       links) {
 
     var me = this;
 
@@ -82,8 +139,13 @@ comNet.prototype.drawNodes = function (svg,
         .data(links)
         .enter().append("line")
         .attr("class", "link")
-        .style("stroke", function(d) { return "black"/*d.colour*/ ; })
-        //.style("stroke", options.linkColour)
+        .style("stroke-dasharray", function(d){
+            if (d.linkType == 0) {
+                return 3;
+            } else {
+                return 0;
+            }
+        }).style("stroke", me.options.linkColour )
         .style("opacity", me.options.opacity)
         .style("stroke-width", eval("(" + me.options.linkWidth + ")"))
         .on("mouseover", function(d) {
@@ -94,7 +156,6 @@ comNet.prototype.drawNodes = function (svg,
             d3.select(this)
                 .style("opacity", me.options.opacity);
         });
-
 
 
 
@@ -129,23 +190,20 @@ comNet.prototype.drawNodes = function (svg,
     force.alphaTarget(0.025).restart();
 
 
-    console.log(links, nodes);
-
-
     // ---- Adding the pie chart if categories is available ----
-    if (me.x.categories === null) {
 
+/*
         node.append("circle")
             .attr("r", function(d){ return me.nodeSize(d);})
-            .attr("fill", function(d) { return me.color(d.group); })
+            .attr("fill", "#000")
             .attr("fill-copied", function(d) { return me.color(d.group); })
             .attr("class", "node-element")
             .attr("id", function(d) { return "node-" + d.name; })
-            .style("stroke", "#000") // Change made: #fff
+            .attr("stroke", function(d) { return me.color(d.group); })
             .style("opacity", me.options.opacity)
-            .style("stroke-width", "1.5px");
+            .style("stroke-width", "2.5px");
+*/
 
-    } else {
 
         var pie = d3.pie()
             .sort(null)
@@ -154,19 +212,19 @@ comNet.prototype.drawNodes = function (svg,
         node
             .attr("id", function(d) {return "node-" + d.name})
             .selectAll(".arc")
-            .data(function(d,i){ return pie(categories[i]) }).enter()
+            .data(function(d){ return d.categories }).enter()
             .append("path")
             .attr("d", d3.arc()
                 .outerRadius(function(d,i){
                     nodesize = d3.select(this.parentNode).attr("size-pie");
                     return nodesize;
                 }).innerRadius(0)
-            ).attr("fill", function(d) { return me.color(d.index); })
-            .attr("fill-copied", function(d) { return me.color(d.index); })
+            ).attr("fill", "#BEBEBE")
+            //.attr("stroke", function(d) { return me.color(d.index); })
+            //.attr("fill-copied", function(d) { return me.color(d.index); })
             .attr("class", "node-element")
             .style("opacity", me.options.opacity);
 
-    }
 
     node.append("svg:text")
         .attr("class", "nodetext")
@@ -213,7 +271,7 @@ comNet.prototype.drawNodes = function (svg,
         d3.select(this).select("text").transition()
             .duration(1250)
             .attr("x", 0)
-            .style("font", ne.options.fontSize + "px ")
+            .style("font", me.options.fontSize + "px ")
             .style("opacity", me.options.opacityNoHover);
     }
 
@@ -236,6 +294,105 @@ comNet.prototype.drawNodes = function (svg,
         d.fy = null;
     }
 
+    me.interactions(idSvg);
+
+
+};
+
+
+comNet.prototype.interactions = function (idSvg) {
+
+    var me = this;
+
+    // Lasso function
+    var lasso = d3.lasso()
+        .closePathSelect(true)
+        .closePathDistance(150)
+
+        .items(d3.select(me.el)
+            .select("#" + idSvg)
+            .selectAll(".node"))
+
+        .targetArea(d3.select(me.el)
+            .selectAll("#" + idSvg))
+
+        .on("start", function() { me.lasso_start(lasso) })
+        .on("draw",  function() { me.lasso_draw (lasso) })
+        .on("end",   function() { me.lasso_end  (lasso) });
+
+    // Call laso interaction
+    d3.select(me.el)
+        .select("#" + idSvg)
+        .call(lasso);
+
+
+};
+
+
+comNet.prototype.lasso_start = function (lasso) {
+    lasso.items()
+        .selectAll(".node-element")
+        .classed("possible",false)
+        .classed("selected",false);
+};
+
+comNet.prototype.lasso_draw = function(lasso) {
+    // Style the possible dots
+    lasso.possibleItems()
+        .selectAll(".node-element")
+        .classed("not_possible",false)
+        .classed("possible",true);
+    // Style the not possible dot
+    lasso.notPossibleItems()
+        .selectAll(".node-element")
+        .classed("not_possible",true)
+        .classed("possible",false);
+};
+
+comNet.prototype.lasso_end = function(lasso) {
+
+    var me = this;
+    // Reset the color of all dots
+    lasso.items()
+        .selectAll(".node-element")
+        .classed("not_possible",false)
+        .classed("possible",false);
+    // Style the selected dots
+    lasso.selectedItems()
+        .selectAll(".node-element")
+        .classed("selected",true);
+
+    me.dataIdSelected = [];
+    lasso.selectedItems().each(function(d){
+        me.dataIdSelected = me.dataIdSelected.concat(d.nameList);
+    });
+    me.interactionNodeSelection();
+
+};
+
+
+comNet.prototype.interactionNodeSelection = function (){
+    var me = this;
+
+
+    d3.select(me.el).selectAll(".node").each(function(d){
+
+        // --> Restore the previous fill
+        d3.select(this)
+            .selectAll(".node-element")
+            .classed("selected", false);
+
+        // --> If selection highlight
+        function isInSelection(element) {
+            return me.dataIdSelected.includes(element);
+        }
+
+        if( d.nameList.findIndex(isInSelection) > -1 ) {
+            d3.select(this)
+                .selectAll(".node-element")
+                .classed("selected", true);
+        }
+    });
 };
 
 
@@ -315,85 +472,7 @@ if(options.legend){
 
 /*
 
- comNet.prototype.interactions = function () {
 
- function sendDataToShiny (dataForShiny){
- var idName = d3.select(el).select("svg").attr("id");
- var dani = {"id":idName, "data": dataForShiny};
- //console.log(dani);
- return dani;
- }
-
- if (options.interaction == "brushing") { // <-- enable brushing interaction
- var brush = svg.append("g")
- .attr("class", "brush")
- .call(d3.brush()
- .extent([[0, 0], [width, height]])
- .on("brush", function() {
- var extent = d3.event.selection;
- dataForShiny = [];
- node.each(function(d) {
- var evaluation = extent[0][0] <= d.x && d.x < extent[1][0]
- && extent[0][1] <= d.y && d.y < extent[1][1];
- if (evaluation == true) {
- dataForShiny.push(d.name)
- d3.select(this).selectAll(".node-element").attr("fill","yellow")
- } else {
- d3.select(this).selectAll(".node-element").each(function(){
- d3.select(this).attr("fill", d3.select(this).attr("fill-copied") );
- });
- }
-
- });
- }).on("end", Shiny.onInputChange("mydata", sendDataToShiny(dataForShiny)))
- );
-
- } else if (options.interaction == "lasso") { // <-- lasso interaction
- // Lasso sub-functions
- var lasso_start = function() {
- lasso.items()
- .classed("not_possible",true)
- .classed("selected",false);
- };
- var lasso_draw = function() {
- // Style the possible dots
- lasso.possibleItems()
- .classed("not_possible",false)
- .classed("possible",true);
- // Style the not possible dot
- lasso.notPossibleItems()
- .classed("not_possible",true)
- .classed("possible",false);
- };
- var lasso_end = function() {
- // Reset the color of all dots
- lasso.items()
- .classed("not_possible",false)
- .classed("possible",false);
- // Style the selected dots
- lasso.selectedItems()
- .classed("selected",true);
- // Data for Shiny
- dataForShiny = [];
- lasso.selectedItems().each(function(d){
- dataForShiny.push(d.name);
- });
- Shiny.onInputChange("mydata", sendDataToShiny(dataForShiny));
- };
- // Lasso function
- var lasso = d3.lasso()
- .closePathSelect(true)
- .closePathDistance(150)
- .items(node.selectAll(".node-element"))
- .targetArea(d3.select(el).select("svg"))
- .on("start",lasso_start)
- .on("draw",lasso_draw)
- .on("end",lasso_end);
-
- d3.select(el).select('svg').call(lasso);
- }
-
- };
 
 
  */

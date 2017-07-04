@@ -148,18 +148,18 @@ compareNetwork <- function(Inputs,
                          Group = "group",
                          height = NULL,
                          width = NULL,
-                         colourScale = JS("d3.scaleOrdinal(d3.schemeCategory20);"),
+                         colourScale = JS("d3.scaleOrdinal(d3.schemeCategory10);"),
                          fontSize = 14,
                          fontFamily = "serif",
                          linkDistance = 50,
                          linkWidth = JS("function(d) { return Math.sqrt(d.value); }"),
                          radiusCalculation = JS(" Math.sqrt(d.nodesize)+6"),
                          charge = -120,
-                         linkColour = "#666",
+                         linkColour = "1F1F1F",
                          opacity = 0.6,
-                         zoom = FALSE,
+                         zoom = TRUE,
                          legend = FALSE,
-                         interaction = "brushing",
+                         interaction = "lasso", # "brushing", "lasso"
                          shiny = FALSE,
                          id = "default",
                          bounded = FALSE,
@@ -176,7 +176,7 @@ compareNetwork <- function(Inputs,
               "Zoom option is not compatible with lasso at the same time.",
               "Zoom won't be used", sep=" "))
     }
-  
+
     # If tbl_df convert to plain data.frame
     # Links <- tbl_df_strip(Links)
     # Nodes <- tbl_df_strip(Nodes)
@@ -226,7 +226,7 @@ compareNetwork <- function(Inputs,
             linkDistance = linkDistance,
             linkWidth = linkWidth,
             charge = charge,
-            # linkColour = linkColour,
+            linkColour = linkColour,
             opacity = opacity,
             zoom = zoom,
             legend = legend,
