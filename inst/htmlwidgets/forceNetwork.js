@@ -140,14 +140,33 @@ HTMLWidgets.widget({
       // --- Restart the force simulation ---
       // It avoids a bug when we interact with Shiny
       force.alphaTarget(0.025).restart();
+      
+      
+      //-- Coloring the nodes based on their size. 
+      // If the size of the conn. comp. is 1 the color of the node will be gray.
+      var countSizeGroup = d3.nest()
+        .key(function(d) { return d.group; })
+        .rollup(function(nodes) { return d3.sum(nodes, function(e) { return e.nodesize }); })
+        .entries(nodes);
+        
+      var colorEval =  function(d) {
+        var el = countSizeGroup.filter(function( e ) {
+          return e.key == d.group;
+        });
+        if (el[0].value > 1) {
+          return color(d.group); 
+        } else {
+          return "#C0C0C0";
+        }
+      } 
     
     // ---- Adding the pie chart if categories is available ----
     if (x.categories === null) {
       
       node.append("circle")
       .attr("r", function(d){ return nodeSize(d);})
-      .attr("fill", function(d) { return color(d.group); })
-      .attr("fill-copied", function(d) { return color(d.group); })
+      .attr("fill", colorEval)
+      .attr("fill-copied", function(d) { return colorEval })
       .attr("class", "node-element")
       .attr("id", function(d) { return "node-" + d.name; })
       .style("stroke", "#000") // Change made: #fff

@@ -219,8 +219,8 @@ comNet.prototype.drawNodes = function (idSvg, svg,
                     nodesize = d3.select(this.parentNode).attr("size-pie");
                     return nodesize;
                 }).innerRadius(0)
-            ).attr("fill", "#BEBEBE")
-            //.attr("stroke", function(d) { return me.color(d.index); })
+            ).attr("stroke", function(d) { return me.color(d.index); })
+            //.attr("fill", "#BEBEBE")
             //.attr("fill-copied", function(d) { return me.color(d.index); })
             .attr("class", "node-element")
             .style("opacity", me.options.opacity);
