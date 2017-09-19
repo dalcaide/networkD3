@@ -156,9 +156,9 @@ HTMLWidgets.widget({
         if (el[0].value > 1) {
           return color(d.group); 
         } else {
-          return "#C0C0C0";
+          return "#252525";
         }
-      } 
+      }; 
     
     // ---- Adding the pie chart if categories is available ----
     if (x.categories === null) {
