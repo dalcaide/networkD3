@@ -144,14 +144,42 @@ HTMLWidgets.widget({
       
       //-- Coloring the nodes based on their size. 
       // If the size of the conn. comp. is 1 the color of the node will be gray.
+      /*
       var countSizeGroup = d3.nest()
         .key(function(d) { return d.group; })
         .rollup(function(nodes) { return d3.sum(nodes, function(e) { return e.nodesize }); })
         .entries(nodes);
+      */  
+      
+      // If the there are more than 1 community the component will be colored.
+      // Function to eliminate duplicates
+      function eliminateDuplicates(arr) {
+        var i,
+            len=arr.length,
+            out=[],
+            obj={};
+      
+        for (i=0;i<len;i++) {
+          obj[arr[i]]=0;
+        }
+        for (i in obj) {
+          out.push(i);
+        }
+        return out;
+      }
+        
+      var countComInComp = d3.nest()
+        .key(function(d) { return d.component; })
+        .rollup(function(nodes) {
+          var groupArray = [];
+          Object.keys(nodes).map(function(i) { groupArray.push(nodes[i].group); });
+          return eliminateDuplicates(groupArray).length;
+        }).entries(nodes);
+        
         
       var colorEval =  function(d) {
-        var el = countSizeGroup.filter(function( e ) {
-          return e.key == d.group;
+        var el = countComInComp.filter(function( e ) {
+          return e.key == d.component;
         });
         if (el[0].value > 1) {
           return color(d.group); 

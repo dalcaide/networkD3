@@ -148,6 +148,7 @@ forceNetwork <- function(Links,
                          NodeID,
                          Nodesize,
                          Group,
+                         Component,
                          height = NULL,
                          width = NULL,
                          colourScale = JS("d3.scaleOrdinal(d3.schemeCategory20);"),
@@ -205,8 +206,8 @@ forceNetwork <- function(Links,
             names(LinksDF) <- c("source", "target", "value")
     }
     if (!missing(Nodesize)){
-            NodesDF <- data.frame(Nodes[, NodeID], Nodes[, Group], Nodes[, Nodesize])
-            names(NodesDF) <- c("name", "group", "nodesize")
+            NodesDF <- data.frame(Nodes[, NodeID], Nodes[, Group], Nodes[, Nodesize], Nodes[, Component])
+            names(NodesDF) <- c("name", "group", "nodesize", "component")
             nodesize = TRUE
     } else {
             NodesDF <- data.frame(Nodes[, NodeID], Nodes[, Group])
